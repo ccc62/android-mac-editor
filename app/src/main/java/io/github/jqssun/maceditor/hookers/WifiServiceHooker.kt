@@ -72,7 +72,7 @@ class WifiServiceHooker {
                 }
             }, IntentFilter(ACTION_APPLY_MAC), Context.RECEIVER_EXPORTED)
             receiverRegistered = true
-            module?.log(Log.INFO, TAG, "Registered apply-MAC receiver in system_server")
+            module?.log(Log.DEBUG, TAG, "Registered apply-MAC receiver in system_server")
         }
 
         private fun _applyMacDirectly() {
@@ -80,7 +80,7 @@ class WifiServiceHooker {
             val method = nativeSetStaMethod
             val iface = lastIfaceName
             if (native == null || method == null || iface == null) {
-                module?.log(Log.WARN, TAG, "Cannot apply MAC: WifiNative not cached yet")
+                module?.log(Log.ERROR, TAG, "Cannot apply MAC: WifiNative not cached yet")
                 return
             }
             val prefs = module?.getRemotePreferences(BuildConfig.APPLICATION_ID)
@@ -90,7 +90,7 @@ class WifiServiceHooker {
             try {
                 // calls WifiNative.setStaMacAddress which does disconnect() + HAL call
                 method.invoke(native, iface, MacAddress.fromString(mac))
-                module?.log(Log.INFO, TAG, "Directly applied MAC: $mac on $iface")
+                module?.log(Log.DEBUG, TAG, "Applied MAC: $mac on $iface")
             } catch (e: Exception) {
                 module?.log(Log.ERROR, TAG, "Failed to directly apply MAC: $e")
             }
@@ -105,7 +105,7 @@ class WifiServiceHooker {
                 }
                 ctx.sendBroadcast(intent)
             } catch (e: Exception) {
-                module?.log(Log.WARN, TAG, "Could not broadcast MAC: $e")
+                module?.log(Log.DEBUG, TAG, "Could not broadcast MAC: $e")
             }
         }
 
@@ -132,8 +132,8 @@ class WifiServiceHooker {
                     return chain.proceed(args)
                 }
 
-                // Additional logging if MAC address modification is allowed
-                module?.log(Log.INFO, TAG, "Allowed MAC address change to ${chain.getArg(1)} on ${chain.getArg(0)}")
+                // Log MAC address change if allowed
+                module?.log(Log.DEBUG, TAG, "Allowed MAC address change to ${chain.getArg(1)} on ${chain.getArg(0)}")
                 
                 return chain.proceed()
             }

@@ -47,7 +47,7 @@ jobs:
           java-version: "21"
           cache: "gradle"
 
-      - name: Build
+      - name: Build APK
         run: |
           echo ${{ secrets.STORE }} | base64 -d > upload.jks
           echo ${{ secrets.LOCAL }} | base64 -d > local.properties

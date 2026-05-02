@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.MacAddress
+import android.util.Log
 import io.github.jqssun.maceditor.BuildConfig
+import io.github.jqssun.maceditor.TAG
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -45,6 +47,7 @@ class WifiServiceHooker {
                     val hooker = MacAddrHooker()
                     module.hook(setStaMethod).intercept(hooker)
                     module.hook(setApMethod).intercept(hooker)
+                    module.log(Log.INFO, TAG, "Hooked WifiNative.setStaMacAddress and setApMacAddress")
                 }
                 result
             }
@@ -69,6 +72,7 @@ class WifiServiceHooker {
                 }
             }, IntentFilter(ACTION_APPLY_MAC), Context.RECEIVER_EXPORTED)
             receiverRegistered = true
+            module?.log(Log.INFO, TAG, "Registered apply-MAC receiver in system_server")
         }
 
         private fun _applyMacDirectly() {
@@ -76,6 +80,7 @@ class WifiServiceHooker {
             val method = nativeSetStaMethod
             val iface = lastIfaceName
             if (native == null || method == null || iface == null) {
+                module?.log(Log.WARN, TAG, "Cannot apply MAC: WifiNative not cached yet")
                 return
             }
             val prefs = module?.getRemotePreferences(BuildConfig.APPLICATION_ID)
@@ -85,8 +90,9 @@ class WifiServiceHooker {
             try {
                 // calls WifiNative.setStaMacAddress which does disconnect() + HAL call
                 method.invoke(native, iface, MacAddress.fromString(mac))
+                module?.log(Log.INFO, TAG, "Directly applied MAC: $mac on $iface")
             } catch (e: Exception) {
-                // Failure to apply MAC, but no log output
+                module?.log(Log.ERROR, TAG, "Failed to directly apply MAC: $e")
             }
         }
 
@@ -99,7 +105,7 @@ class WifiServiceHooker {
                 }
                 ctx.sendBroadcast(intent)
             } catch (e: Exception) {
-                // Failure to broadcast MAC, but no log output
+                module?.log(Log.WARN, TAG, "Could not broadcast MAC: $e")
             }
         }
 
@@ -122,9 +128,13 @@ class WifiServiceHooker {
                 if (customMac.isNotEmpty()) {
                     val args = chain.args.toTypedArray()
                     args[1] = MacAddress.fromString(customMac)
+                    module?.log(Log.INFO, TAG, "Replacing MAC with $customMac on ${chain.getArg(0)}")
                     return chain.proceed(args)
                 }
 
+                // Additional logging if MAC address modification is allowed
+                module?.log(Log.INFO, TAG, "Allowed MAC address change to ${chain.getArg(1)} on ${chain.getArg(0)}")
+                
                 return chain.proceed()
             }
         }

@@ -56,7 +56,7 @@ jobs:
           rm upload.jks local.properties
 
       - name: Upload APK as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: app-release-apk
           path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk

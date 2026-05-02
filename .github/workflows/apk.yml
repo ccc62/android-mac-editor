@@ -58,12 +58,17 @@ jobs:
           ./gradlew assembleRelease --stacktrace
           rm upload.jks local.properties
 
+      # 查找 APK 文件路径并输出
+      - name: Find APK file
+        run: |
+          find . -name "*.apk"
+        
       # 使用 actions/upload-artifact@v4 上传 APK 工件
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk   # 工件名称
-          path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk  # APK 文件路径
+          path: ./app/build/outputs/apk/release/*.apk  # 更新路径，查找 APK 文件
 
       # 如果你需要同步到 Xposed 仓库，也可以添加这部分，但这里不涉及权限问题
       - name: Checkout Xposed Repository

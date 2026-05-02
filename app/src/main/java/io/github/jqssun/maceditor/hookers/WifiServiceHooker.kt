@@ -6,11 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.MacAddress
+import android.util.Log
 import io.github.jqssun.maceditor.BuildConfig
+import io.github.jqssun.maceditor.TAG
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
-import android.util.Log
 import java.lang.reflect.Method
 
 class WifiServiceHooker {
@@ -123,14 +124,13 @@ class WifiServiceHooker {
                 if (customMac.isNotEmpty()) {
                     val args = chain.args.toTypedArray()
                     args[1] = MacAddress.fromString(customMac)
+
+                    // Log only if the MAC address was changed
+                    module?.log(Log.INFO, TAG, "Replacing MAC with $customMac on ${chain.getArg(0)}")
                     return chain.proceed(args)
                 }
 
-                // Only log on MAC modification when successful
-                if (chain.getArg(1) != null) {
-                    module?.log(Log.INFO, TAG, "Allowed MAC address change to ${chain.getArg(1)} on ${chain.getArg(0)}")
-                }
-
+                // No need to log every allowed MAC change
                 return chain.proceed()
             }
         }

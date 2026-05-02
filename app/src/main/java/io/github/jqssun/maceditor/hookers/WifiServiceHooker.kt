@@ -116,12 +116,12 @@ class WifiServiceHooker {
 
                 if (!hookActive) return chain.proceed()
 
-                // cache WifiNative instance and iface
+                // Cache WifiNative instance and iface
                 nativeInstance = chain.thisObject
                 lastIfaceName = chain.getArg(0) as? String
                 _registerApplyReceiver()
 
-                // broadcast the system-assigned MAC to the app
+                // Broadcast the system-assigned MAC to the app
                 (chain.getArg(1) as? MacAddress)?.let { _broadcastDeviceMac(it) }
 
                 val customMac = prefs?.getString("customMac", "") ?: ""
@@ -131,6 +131,10 @@ class WifiServiceHooker {
                     module?.log(Log.INFO, TAG, "Replacing MAC with $customMac on ${chain.getArg(0)}")
                     return chain.proceed(args)
                 }
+
+                // Additional logging if MAC address modification is allowed
+                module?.log(Log.INFO, TAG, "Allowed MAC address change to ${chain.getArg(1)} on ${chain.getArg(0)}")
+                
                 return chain.proceed()
             }
         }

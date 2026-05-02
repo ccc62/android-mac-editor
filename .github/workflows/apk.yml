@@ -55,26 +55,13 @@ jobs:
           ./gradlew assembleRelease --stacktrace
           rm upload.jks local.properties
 
-      - name: Publish (GitHub)
-        uses: softprops/action-gh-release@v2
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: v${{ env.version }}
-          tag_name: v${{ env.version }}
-          files: |
-            ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk
+          name: app-release-apk
+          path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk
 
-      - name: Publish (Xposed)
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.PAT }}
-          repository: ${{ env.target_owner }}/${{ env.target_repo }}
-          name: v${{ env.version }}
-          tag_name: v${{ env.version }}
-          files: |
-            ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk
-
-      - name: Checkout
+      - name: Checkout Xposed Repository
         uses: actions/checkout@v4
         with:
           repository: ${{ env.target_owner }}/${{ env.target_repo }}

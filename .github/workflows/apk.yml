@@ -9,9 +9,9 @@ env:
 on:
   push:
     branches:
-      - "release/**"
+      - "release/**"  # 监视 release/** 分支
     tags:
-      - "v*.*.*"
+      - "v*.*.*"       # 监视 v*.*.* 标签
   workflow_dispatch:
     inputs:
       version:
@@ -23,23 +23,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # 检出仓库代码
 
-      - name: Set TAG
+      # 设置版本标签
+      - name: Set TAG (push event)
         if: github.event_name == 'push'
         run: |
           echo "version=$(echo '${{ github.ref_name }}' | awk -F 'v' '{print $2}')" >> $GITHUB_ENV
 
-      - name: Set TAG
+      - name: Set TAG (workflow_dispatch event)
         if: github.event_name == 'workflow_dispatch'
         run: |
           echo "version=$(echo '${{ inputs.version }}' | awk -F 'v' '{print $2}')" >> $GITHUB_ENV
 
       - name: Set ENV
         run: |
-          echo "date_today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV;
+          echo "date_today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
 
+      # 设置 JDK 环境
       - name: Use JDK
         uses: actions/setup-java@v4
         with:
@@ -47,20 +49,23 @@ jobs:
           java-version: "21"
           cache: "gradle"
 
+      # 构建 APK
       - name: Build APK
         run: |
           echo ${{ secrets.STORE }} | base64 -d > upload.jks
           echo ${{ secrets.LOCAL }} | base64 -d > local.properties
-          chmod +x ./gradlew;
+          chmod +x ./gradlew
           ./gradlew assembleRelease --stacktrace
           rm upload.jks local.properties
 
+      # 上传 APK 为工件
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: app-release-apk
-          path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk
+          name: app-release-apk   # 工件名称
+          path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk  # APK 文件路径
 
+      # 如果你需要同步到 Xposed 仓库，也可以添加这部分，但这里不涉及权限问题
       - name: Checkout Xposed Repository
         uses: actions/checkout@v4
         with:

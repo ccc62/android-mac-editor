@@ -9,9 +9,9 @@ env:
 on:
   push:
     branches:
-      - "release/**"  # 监视 release/** 分支
+      - "release/**"
     tags:
-      - "v*.*.*"       # 监视 v*.*.* 标签
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
@@ -58,9 +58,9 @@ jobs:
           ./gradlew assembleRelease --stacktrace
           rm upload.jks local.properties
 
-      # 上传 APK 为工件
+      # 使用 actions/upload-artifact@v3 上传 APK 工件
       - name: Upload APK as Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: app-release-apk   # 工件名称
           path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk  # APK 文件路径

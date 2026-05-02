@@ -6,9 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.MacAddress
-import android.util.Log
 import io.github.jqssun.maceditor.BuildConfig
-import io.github.jqssun.maceditor.TAG
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -88,7 +86,7 @@ class WifiServiceHooker {
                 // calls WifiNative.setStaMacAddress which does disconnect() + HAL call
                 method.invoke(native, iface, MacAddress.fromString(mac))
             } catch (e: Exception) {
-                module?.log(Log.ERROR, TAG, "Failed to directly apply MAC: $e")
+                // Failure to apply MAC, but no log output
             }
         }
 
@@ -101,7 +99,7 @@ class WifiServiceHooker {
                 }
                 ctx.sendBroadcast(intent)
             } catch (e: Exception) {
-                module?.log(Log.WARN, TAG, "Could not broadcast MAC: $e")
+                // Failure to broadcast MAC, but no log output
             }
         }
 
@@ -124,13 +122,9 @@ class WifiServiceHooker {
                 if (customMac.isNotEmpty()) {
                     val args = chain.args.toTypedArray()
                     args[1] = MacAddress.fromString(customMac)
-
-                    // Log only if the MAC address was changed
-                    module?.log(Log.INFO, TAG, "Replacing MAC with $customMac on ${chain.getArg(0)}")
                     return chain.proceed(args)
                 }
 
-                // No need to log every allowed MAC change
                 return chain.proceed()
             }
         }

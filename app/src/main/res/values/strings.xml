@@ -13,7 +13,10 @@
     <string name="hook_toggle_label">Override randomized MAC</string>
     <string name="hook_toggle_desc">\"Use randomized MAC\" must be selected in \"Privacy\" under \"Network details\" in Settings</string>
     <string name="force_mac_randomization_label">Force enable MAC randomization</string>
-    <string name="force_mac_randomization_desc">Force support for randomization and show \"Privacy\" section in \"Network details\"</string>
+    <string name="force_mac_randomization_desc">Force support for randomization and always show \"Privacy\" section in \"Network details\"</string>
+    <string name="iface_sta">Wi-Fi</string>
+    <string name="iface_ap">Hotspot</string>
+    <string name="iface_p2p">Wi-Fi Direct</string>
     <string name="device_mac">System MAC</string>
     <string name="current_mac">Active MAC</string>
     <string name="new_mac">Standby MAC</string>

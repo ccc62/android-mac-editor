@@ -27,28 +27,16 @@ class PrefManager {
             })
         }
 
-        fun isHookOn(): Boolean {
-            return prefs?.getBoolean("hookActive", true) ?: true
+        fun get(t: Toggle) = t.get(prefs)
+
+        fun set(t: Toggle, on: Boolean) {
+            prefs?.edit()?.putBoolean(t.key, on)?.apply()
         }
 
-        fun setHookState(on: Boolean) {
-            prefs?.edit()?.putBoolean("hookActive", on)?.apply()
-        }
-
-        fun getCustomMac(): String {
-            return prefs?.getString("customMac", "") ?: ""
-        }
+        fun getCustomMac() = customMac(prefs)
 
         fun setCustomMac(mac: String) {
-            prefs?.edit()?.putString("customMac", mac)?.apply()
-        }
-
-        fun isForceShowMacRandomization(): Boolean {
-            return prefs?.getBoolean("forceShowMacRandomization", true) ?: true
-        }
-
-        fun setForceShowMacRandomization(on: Boolean) {
-            prefs?.edit()?.putBoolean("forceShowMacRandomization", on)?.apply()
+            prefs?.edit()?.putString(KEY_MAC, mac)?.apply()
         }
     }
 }

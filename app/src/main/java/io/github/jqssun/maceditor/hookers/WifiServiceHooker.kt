@@ -9,6 +9,8 @@ import android.net.MacAddress
 import android.util.Log
 import io.github.jqssun.maceditor.BuildConfig
 import io.github.jqssun.maceditor.TAG
+import io.github.jqssun.maceditor.utils.Toggle
+import io.github.jqssun.maceditor.utils.customMac
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -44,9 +46,8 @@ class WifiServiceHooker {
                     val setStaMethod = nativeClass.getDeclaredMethod("setStaMacAddress", String::class.java, MacAddress::class.java)
                     val setApMethod = nativeClass.getDeclaredMethod("setApMacAddress", String::class.java, MacAddress::class.java)
                     nativeSetStaMethod = setStaMethod
-                    val hooker = MacAddrHooker()
-                    module.hook(setStaMethod).intercept(hooker)
-                    module.hook(setApMethod).intercept(hooker)
+                    module.hook(setStaMethod).intercept(MacAddrHooker(Toggle.OVERRIDE_STA))
+                    module.hook(setApMethod).intercept(MacAddrHooker(Toggle.OVERRIDE_AP))
                     module.log(Log.INFO, TAG, "Hooked WifiNative.setStaMacAddress and setApMacAddress")
                 }
                 result
@@ -83,8 +84,7 @@ class WifiServiceHooker {
                 module?.log(Log.WARN, TAG, "Cannot apply MAC: WifiNative not cached yet")
                 return
             }
-            val prefs = module?.getRemotePreferences(BuildConfig.APPLICATION_ID)
-            val mac = prefs?.getString("customMac", "") ?: ""
+            val mac = customMac(module?.getRemotePreferences(BuildConfig.APPLICATION_ID))
             if (mac.isEmpty()) return
 
             try {
@@ -109,26 +109,26 @@ class WifiServiceHooker {
             }
         }
 
-        class MacAddrHooker : XposedInterface.Hooker {
+        class MacAddrHooker(private val toggle: Toggle) : XposedInterface.Hooker {
             override fun intercept(chain: XposedInterface.Chain): Any? {
                 val prefs = module?.getRemotePreferences(BuildConfig.APPLICATION_ID)
-                val hookActive = prefs?.getBoolean("hookActive", true) ?: true
+                if (!toggle.get(prefs)) return chain.proceed()
 
-                if (!hookActive) return chain.proceed()
+                if (toggle == Toggle.OVERRIDE_STA) {
+                    // cache WifiNative instance and iface
+                    nativeInstance = chain.thisObject
+                    lastIfaceName = chain.getArg(0) as? String
+                    _registerApplyReceiver()
 
-                // cache WifiNative instance and iface
-                nativeInstance = chain.thisObject
-                lastIfaceName = chain.getArg(0) as? String
-                _registerApplyReceiver()
+                    // broadcast the system-assigned MAC to the app
+                    (chain.getArg(1) as? MacAddress)?.let { _broadcastDeviceMac(it) }
+                }
 
-                // broadcast the system-assigned MAC to the app
-                (chain.getArg(1) as? MacAddress)?.let { _broadcastDeviceMac(it) }
-
-                val customMac = prefs?.getString("customMac", "") ?: ""
-                if (customMac.isNotEmpty()) {
+                val mac = customMac(prefs)
+                if (mac.isNotEmpty()) {
                     val args = chain.args.toTypedArray()
-                    args[1] = MacAddress.fromString(customMac)
-                    module?.log(Log.INFO, TAG, "Replacing MAC with $customMac on ${chain.getArg(0)}")
+                    args[1] = MacAddress.fromString(mac)
+                    module?.log(Log.INFO, TAG, "Replacing MAC with $mac on ${chain.getArg(0)}")
                     return chain.proceed(args)
                 }
                 return chain.proceed()

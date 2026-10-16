@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.agp.app)
-    alias(libs.plugins.kotlin)
 }
 
 val localProps = Properties().apply {
@@ -12,13 +11,13 @@ val localProps = Properties().apply {
 
 android {
     namespace = "io.github.jqssun.maceditor"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 29
-        targetSdk = 36
-        versionCode = 7
-        versionName = "0.0.7"
+        targetSdk = 37
+        versionCode = 8
+        versionName = "0.0.8"
         applicationId = "io.github.jqssun.maceditor"
     }
 

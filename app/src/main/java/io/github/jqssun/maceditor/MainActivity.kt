@@ -16,11 +16,21 @@ import io.github.jqssun.maceditor.hookers.WifiServiceHooker
 import io.github.jqssun.maceditor.utils.MacTextWatcher
 import io.github.jqssun.maceditor.utils.MacUtils
 import io.github.jqssun.maceditor.utils.PrefManager
+import io.github.jqssun.maceditor.utils.Toggle
 import io.github.jqssun.maceditor.utils.XposedChecker
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var updatingUI = false
+    private val toggles by lazy {
+        mapOf(
+            binding.overrideStaSwitch to Toggle.OVERRIDE_STA,
+            binding.overrideApSwitch to Toggle.OVERRIDE_AP,
+            binding.forceStaSwitch to Toggle.FORCE_STA,
+            binding.forceApSwitch to Toggle.FORCE_AP,
+            binding.forceP2pSwitch to Toggle.FORCE_P2P
+        )
+    }
 
     private val macReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -64,8 +74,7 @@ class MainActivity : AppCompatActivity() {
         _updateStatusCard()
         _refreshDeviceMac()
         _refreshActiveMac()
-        binding.hookSwitch.isChecked = PrefManager.isHookOn()
-        binding.forceRandomizationSwitch.isChecked = PrefManager.isForceShowMacRandomization()
+        toggles.forEach { (sw, t) -> sw.isChecked = PrefManager.get(t) }
         val saved = PrefManager.getCustomMac()
         if (saved.isNotEmpty() && binding.edittextNewMac.text.isNullOrEmpty()) {
             binding.edittextNewMac.setText(saved)
@@ -81,7 +90,7 @@ class MainActivity : AppCompatActivity() {
     private fun _updateStatusCard() {
         val enabled = XposedChecker.isEnabled()
         val hooked = enabled && _isSystemServerHooked()
-        val hookOn = hooked && PrefManager.isHookOn()
+        val hookOn = hooked && (PrefManager.get(Toggle.OVERRIDE_STA) || PrefManager.get(Toggle.OVERRIDE_AP))
 
         when {
             !enabled -> {
@@ -108,14 +117,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun _setupToggles() {
-        binding.hookSwitch.setOnCheckedChangeListener { _, checked ->
-            if (updatingUI) return@setOnCheckedChangeListener
-            PrefManager.setHookState(checked)
-            _updateStatusCard()
-        }
-        binding.forceRandomizationSwitch.setOnCheckedChangeListener { _, checked ->
-            if (updatingUI) return@setOnCheckedChangeListener
-            PrefManager.setForceShowMacRandomization(checked)
+        toggles.forEach { (sw, t) ->
+            sw.setOnCheckedChangeListener { _, checked ->
+                if (updatingUI) return@setOnCheckedChangeListener
+                PrefManager.set(t, checked)
+                _updateStatusCard()
+            }
         }
     }
 

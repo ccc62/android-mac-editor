@@ -1,0 +1,50 @@
+name: Generate APK
+
+on:
+  push:
+    branches:
+      - "release/**"
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set TAG
+        run: |
+          echo "version=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)" >> "$GITHUB_ENV"
+
+      - name: Use JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: "21"
+          cache: gradle
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease bundleRelease --stacktrace
+          echo "=== APK files ==="
+          find app/build/outputs/apk -type f -name '*.apk'
+          echo "=== AAB files ==="
+          find app/build/outputs/bundle -type f -name '*.aab'
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: v${{ env.version }}
+          tag_name: v${{ env.version }}
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
